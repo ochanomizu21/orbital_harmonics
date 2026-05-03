@@ -138,6 +138,23 @@ Each section depends on the ones above it. Items within a section can be done in
 - FM/Bell: velocity modulates modulation index (1 slow → 20 fast = more metallic harmonics)
 - Pluck/Marimba: velocity modulates dampening (1000 slow → 6000 fast = longer sustain)
 
+### Mute Bug (FIXED)
+- `mutePlanet` set gain to 0, but `triggerNote` overwrote it with velocity. Mute was ineffective.
+- Fix: PlanetVoice tracks `muted` flag; `triggerNote` is a no-op when muted.
+- PlanetVoice also tracks `userVolume` separately so unmute restores the correct volume.
+
+### Solo Logic (FIXED)
+- Extracted `toggleSolo`/`toggleMute` helpers used by both sidebar and keyboard.
+- When unsoloing, individual mute states are properly restored (not blindly unmuting all).
+- Keyboard solo handler now uses full solo logic (was just toggling a flag without audio).
+
+### Reset Cleanup (FIXED)
+- `sim.reset()` now calls `resetIdCounter()` and `resetPaletteIndex()` so new planets
+  start from Planet 1 with palette color 1.
+
+### Responsive CSS (ADDED)
+- Panels auto-collapse at <1024px width per spec §05.11.
+
 ---
 
 ## Remaining Improvements (Future)
