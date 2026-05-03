@@ -119,7 +119,7 @@ export function createVoice(
   effects: EffectsChain,
 ): PlanetVoice {
   const { synth, filter } = createSynth(synthType);
-  const gainNode = new Tone.Gain(0.75);
+  const gainNode = new Tone.Gain(0.5);
   const panNode = new Tone.Panner(0);
 
   // Connect: synth → [filter] → gain → pan → effects
@@ -128,7 +128,7 @@ export function createVoice(
   gainNode.connect(panNode);
   panNode.connect(effects.input);
 
-  return { planetId, synth, filter, gainNode, panNode, synthType, userVolume: 0.75, muted: false };
+  return { planetId, synth, filter, gainNode, panNode, synthType, userVolume: 0.5, muted: false };
 }
 
 /**
