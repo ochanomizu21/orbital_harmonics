@@ -138,6 +138,27 @@ const controls = new Controls(controlsEl, {
 
 const statusBar = new StatusBar(statusBarEl);
 
+// Panel toggle buttons
+const createPanelToggle = (side: 'left' | 'right') => {
+  const btn = document.createElement('button');
+  btn.className = 'panel-toggle sidebar-toggle';
+  btn.textContent = side === 'left' ? '◀' : '▶';
+  btn.title = 'Toggle sidebar';
+  btn.addEventListener('click', () => sidebarEl.classList.toggle('collapsed'));
+  document.body.appendChild(btn);
+};
+createPanelToggle('left');
+
+const createControlsToggle = () => {
+  const btn = document.createElement('button');
+  btn.className = 'panel-toggle controls-toggle';
+  btn.textContent = '◀';
+  btn.title = 'Toggle controls';
+  btn.addEventListener('click', () => controlsEl.classList.toggle('collapsed'));
+  document.body.appendChild(btn);
+};
+createControlsToggle();
+
 const spawnHandler = new SpawnHandler(canvas, {
   onSpawn: (position, velocity, mass) => {
     const body = sim.addPlanet(position, velocity, mass);
