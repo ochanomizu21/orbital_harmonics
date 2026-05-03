@@ -41,6 +41,8 @@ export class Controls {
   private nBodyToggle!: HTMLElement;
   private trailValue!: HTMLElement;
   private speedValue!: HTMLElement;
+  private octaveMinValue!: HTMLElement;
+  private octaveMaxValue!: HTMLElement;
   private reverbValue!: HTMLElement;
   private delayValue!: HTMLElement;
   private masterValue!: HTMLElement;
@@ -119,12 +121,16 @@ export class Controls {
     this.container.appendChild(modeRow);
 
     // Octave range (simplified as two sliders)
-    this.container.appendChild(this.makeSlider('Octave Min', 1, 6, 3, 1, (v) => {
+    const octaveMinContainer = this.makeSlider('Octave Min', 1, 6, 3, 1, (v) => {
+      this.octaveMinValue.textContent = String(v);
       this.callbacks.onOctaveMinChange(v);
-    }));
-    this.container.appendChild(this.makeSlider('Octave Max', 1, 7, 5, 1, (v) => {
+    }, 'octaveMin');
+    this.container.appendChild(octaveMinContainer);
+    const octaveMaxContainer = this.makeSlider('Octave Max', 1, 7, 5, 1, (v) => {
+      this.octaveMaxValue.textContent = String(v);
       this.callbacks.onOctaveMaxChange(v);
-    }));
+    }, 'octaveMax');
+    this.container.appendChild(octaveMaxContainer);
 
     // Synth default
     this.container.appendChild(this.createSection('DEFAULT SYNTH'));
@@ -226,6 +232,8 @@ export class Controls {
     if (id === 'gravity') { this.gravityValue = val; }
     if (id === 'trail') { this.trailValue = val; }
     if (id === 'speed') { this.speedValue = val; }
+    if (id === 'octaveMin') { this.octaveMinValue = val; }
+    if (id === 'octaveMax') { this.octaveMaxValue = val; }
     if (id === 'reverb') { this.reverbValue = val; }
     if (id === 'delay') { this.delayValue = val; }
     if (id === 'master') { this.masterValue = val; }

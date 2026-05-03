@@ -246,9 +246,15 @@ select {
   font-family: var(--font-mono);
   cursor: pointer;
   outline: none;
+  width: 100%;
 }
 select:hover {
   border-color: rgba(255, 255, 255, 0.3);
+}
+select option {
+  background: #1a1a2e;
+  color: var(--text-primary);
+  padding: 4px;
 }
 .toggle-switch {
   position: relative;
