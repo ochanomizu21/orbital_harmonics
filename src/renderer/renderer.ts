@@ -145,44 +145,30 @@ export class Renderer {
     ctx: CanvasRenderingContext2D,
     gesture: { x: number; y: number; endX: number; endY: number; active: boolean },
   ): void {
-    // Ghost planet
+    // Ghost planet (preview at spawn position)
     ctx.save();
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.6;
     ctx.fillStyle = '#4fc3f7';
     ctx.beginPath();
-    ctx.arc(gesture.x, gesture.y, 8, 0, Math.PI * 2);
+    ctx.arc(gesture.x, gesture.y, 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // Velocity vector (rubber band)
+    // Velocity vector line
     const dx = gesture.endX - gesture.x;
     const dy = gesture.endY - gesture.y;
     const length = Math.sqrt(dx * dx + dy * dy);
 
-    // Color gradient: white → green by length
-    const greenness = Math.min(length / 200, 1);
-    ctx.strokeStyle = `rgb(${Math.round(255 * (1 - greenness))}, 255, ${Math.round(255 * (1 - greenness))})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(gesture.x, gesture.y);
-    ctx.lineTo(gesture.endX, gesture.endY);
-    ctx.stroke();
-
-    // Arrowhead
-    if (length > 10) {
-      const angle = Math.atan2(dy, dx);
-      const arrowLen = 10;
+    if (length > 5) {
+      // Dashed line, color shifts with velocity length
+      const greenness = Math.min(length / 300, 1);
+      ctx.strokeStyle = `rgba(${Math.round(100 + 155 * (1 - greenness))}, ${Math.round(200 + 55 * greenness)}, ${Math.round(200 + 55 * greenness)}, 0.8)`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(gesture.endX, gesture.endY);
-      ctx.lineTo(
-        gesture.endX - arrowLen * Math.cos(angle - 0.4),
-        gesture.endY - arrowLen * Math.sin(angle - 0.4),
-      );
-      ctx.moveTo(gesture.endX, gesture.endY);
-      ctx.lineTo(
-        gesture.endX - arrowLen * Math.cos(angle + 0.4),
-        gesture.endY - arrowLen * Math.sin(angle + 0.4),
-      );
+      ctx.moveTo(gesture.x, gesture.y);
+      ctx.lineTo(gesture.endX, gesture.endY);
       ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     ctx.restore();
