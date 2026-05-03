@@ -155,6 +155,11 @@ Each section depends on the ones above it. Items within a section can be done in
 ### Responsive CSS (ADDED)
 - Panels auto-collapse at <1024px width per spec §05.11.
 
+### Cursor Management (IMPLEMENTED per spec §05.12)
+- Canvas cursor changes contextually: crosshair (default), pointer (over planet),
+  grab (near trigger line), grabbing (dragging trigger line), none (spawn gesture).
+- Exposed `isDragging` state from `TriggerLineInteraction`.
+
 ---
 
 ## Remaining Improvements (Future)
