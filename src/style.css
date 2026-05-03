@@ -406,6 +406,7 @@ select option {
   left: 240px;
   border-radius: 0 6px 6px 0;
   border-left: none;
+  transition: left 200ms ease-out;
 }
 .sidebar-toggle.collapsed {
   left: 0;
@@ -416,8 +417,19 @@ select option {
   right: 260px;
   border-radius: 6px 0 0 6px;
   border-right: none;
+  transition: right 200ms ease-out;
 }
 .controls-toggle.collapsed {
+  right: 0;
+}
+
+/* When sidebar is collapsed, move toggle to edge */
+body:has(.sidebar.collapsed) .sidebar-toggle {
+  left: 0;
+}
+
+/* When controls is collapsed, move toggle to edge */
+body:has(.controls.collapsed) .controls-toggle {
   right: 0;
 }
 
