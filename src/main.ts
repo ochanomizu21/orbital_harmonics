@@ -97,6 +97,8 @@ const controls = new Controls(controlsEl, {
       audio.updateSynthType(id, synth);
       updatePlanet(id, { synthType: synth });
     }
+    // Refresh sidebar to show updated synth labels
+    refreshSidebar();
   },
   onReverbMixChange: (v) => { audio.setReverbMix(v); updateSettings({ reverbMix: v }); },
   onDelayMixChange: (v) => { audio.setDelayMix(v); updateSettings({ delayMix: v }); },
