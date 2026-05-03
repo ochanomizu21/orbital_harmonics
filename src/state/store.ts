@@ -8,10 +8,10 @@ import type { AppState, SettingsState, PlanetState } from './types.js';
 type Listener = () => void;
 
 const defaultSettings: SettingsState = {
-  gravity: 1.0,
+  gravity: 3.0,
   nBodyEnabled: true,
   trailFadeRate: 0.03,
-  simSpeed: 1.0,
+  simSpeed: 5.0,
   root: 'C',
   mode: 'lydian',
   octaveMin: 3,

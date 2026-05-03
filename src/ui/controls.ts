@@ -68,7 +68,7 @@ export class Controls {
     // Simulation section
     this.container.appendChild(this.createSection('SIMULATION'));
 
-    this.container.appendChild(this.makeSlider('Gravity', 0.1, 10.0, 1.0, 0.1, (v) => {
+    this.container.appendChild(this.makeSlider('Gravity', 0.1, 10.0, 3.0, 0.1, (v) => {
       this.gravityValue.textContent = v.toFixed(1);
       this.callbacks.onGravityChange(v);
     }, 'gravity'));
@@ -91,7 +91,7 @@ export class Controls {
       this.callbacks.onTrailFadeChange(v);
     }, 'trail'));
 
-    this.container.appendChild(this.makeSlider('Sim Speed', 0.25, 10.0, 1.0, 0.25, (v) => {
+    this.container.appendChild(this.makeSlider('Sim Speed', 0.25, 10.0, 5.0, 0.25, (v) => {
       this.speedValue.textContent = v.toFixed(2) + '×';
       this.callbacks.onSimSpeedChange(v);
     }, 'speed'));
