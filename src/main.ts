@@ -118,21 +118,23 @@ const statusBar = new StatusBar(statusBarEl);
 const spawnHandler = new SpawnHandler(canvas, {
   onSpawn: (position, velocity, mass) => {
     const body = sim.addPlanet(position, velocity, mass);
-    const state = getState();
+    // Random synth type for new planet
+    const synthTypes: SynthType[] = ['sine', 'triangle', 'sawtooth', 'square', 'fm', 'marimba', 'bell', 'pluck'];
+    const randomSynth = synthTypes[Math.floor(Math.random() * synthTypes.length)];
     addPlanetState({
       id: body.id,
       name: body.name,
       color: body.color,
       muted: false,
       soloed: false,
-      synthType: state.settings.defaultSynth,
-      volume: 0.5, // matches per-voice gain after clipping fix
+      synthType: randomSynth,
+      volume: 0.5,
       pan: 0,
     });
-    audio.addVoice(body.id, state.settings.defaultSynth);
+    audio.addVoice(body.id, randomSynth);
     refreshSidebar();
   },
-  getDefaultMass: () => 3 + Math.floor(Math.random() * 12), // random between 3-15
+  getDefaultMass: () => 1 + Math.floor(Math.random() * 50), // random between 1-50
 });
 
 const triggerLineInteraction = new TriggerLineInteraction(canvas, {
