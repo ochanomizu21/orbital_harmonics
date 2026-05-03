@@ -68,7 +68,10 @@ export class AudioEngine {
   setPlanetVolume(planetId: string, volume: number): void {
     const voice = this.voices.get(planetId);
     if (voice) {
-      voice.gainNode.gain.value = volume;
+      voice.userVolume = volume;
+      if (!voice.muted) {
+        voice.gainNode.gain.value = volume;
+      }
     }
   }
 
@@ -80,11 +83,12 @@ export class AudioEngine {
     }
   }
 
-  /** Mute a planet (gain=0, keep synth alive) */
+  /** Mute a planet — sets muted flag so triggers are skipped entirely */
   mutePlanet(planetId: string, muted: boolean): void {
     const voice = this.voices.get(planetId);
     if (voice) {
-      voice.gainNode.gain.value = muted ? 0 : 0.75;
+      voice.muted = muted;
+      voice.gainNode.gain.value = muted ? 0 : voice.userVolume;
     }
   }
 

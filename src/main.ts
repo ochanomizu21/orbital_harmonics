@@ -54,41 +54,10 @@ const sidebar = new Sidebar(sidebarEl, {
     refreshSidebar();
   },
   onMutePlanet: (id) => {
-    const body = sim.bodies.find((b) => b.id === id);
-    if (body) {
-      body.muted = !body.muted;
-      audio.mutePlanet(id, body.muted);
-      const state = getState().planets.get(id);
-      if (state) updatePlanet(id, { muted: body.muted });
-      refreshSidebar();
-    }
+    toggleMute(id);
   },
   onSoloPlanet: (id) => {
-    const body = sim.bodies.find((b) => b.id === id);
-    if (body) {
-      // Toggle solo — if already soloed, unsolo. Otherwise, solo this one and unsolo others.
-      const wasSoloed = body.soloed;
-      for (const b of sim.planets) {
-        b.soloed = false;
-        audio.mutePlanet(b.id, false);
-        const s = getState().planets.get(b.id);
-        if (s) updatePlanet(b.id, { soloed: false });
-      }
-      if (!wasSoloed) {
-        body.soloed = true;
-        // Mute all non-soloed
-        for (const b of sim.planets) {
-          if (!b.soloed) {
-            audio.mutePlanet(b.id, true);
-            const s = getState().planets.get(b.id);
-            if (s) updatePlanet(b.id, { soloed: false });
-          }
-        }
-        const s = getState().planets.get(id);
-        if (s) updatePlanet(id, { soloed: true });
-      }
-      refreshSidebar();
-    }
+    toggleSolo(id);
   },
   onDeletePlanet: (id) => {
     deletePlanet(id);
@@ -172,28 +141,11 @@ new KeyboardHandler({
   },
   onMuteSelected: () => {
     const id = getState().selectedPlanetId;
-    if (id) {
-      const body = sim.bodies.find((b) => b.id === id);
-      if (body) {
-        body.muted = !body.muted;
-        audio.mutePlanet(id, body.muted);
-        const pState = getState().planets.get(id);
-        if (pState) updatePlanet(id, { muted: body.muted });
-        refreshSidebar();
-      }
-    }
+    if (id) toggleMute(id);
   },
   onSoloSelected: () => {
     const id = getState().selectedPlanetId;
-    if (id) {
-      const body = sim.bodies.find((b) => b.id === id);
-      if (body) {
-        body.soloed = !body.soloed;
-        const s = getState().planets.get(id);
-        if (s) updatePlanet(id, { soloed: body.soloed });
-        refreshSidebar();
-      }
-    }
+    if (id) toggleSolo(id);
   },
   onSetSynth: (index) => {
     const id = getState().selectedPlanetId;
@@ -233,6 +185,44 @@ function deletePlanet(id: string): void {
   audio.removeVoice(id);
   removePlanetState(id);
   if (getState().selectedPlanetId === id) selectPlanet(null);
+  refreshSidebar();
+}
+
+/** Toggle solo on a planet with proper mute logic for all other planets */
+function toggleSolo(targetId: string): void {
+  const body = sim.bodies.find((b) => b.id === targetId);
+  if (!body) return;
+
+  const wasSoloed = body.soloed;
+  // Clear all solo states and restore individual mute states
+  for (const b of sim.planets) {
+    b.soloed = false;
+    audio.mutePlanet(b.id, b.muted); // restore to individual mute state
+    const s = getState().planets.get(b.id);
+    if (s) updatePlanet(b.id, { soloed: false });
+  }
+  if (!wasSoloed) {
+    body.soloed = true;
+    // Mute all non-soloed planets
+    for (const b of sim.planets) {
+      if (!b.soloed) {
+        audio.mutePlanet(b.id, true);
+      }
+    }
+    const s = getState().planets.get(targetId);
+    if (s) updatePlanet(targetId, { soloed: true });
+  }
+  refreshSidebar();
+}
+
+/** Toggle mute on a planet */
+function toggleMute(targetId: string): void {
+  const body = sim.bodies.find((b) => b.id === targetId);
+  if (!body) return;
+  body.muted = !body.muted;
+  audio.mutePlanet(targetId, body.muted);
+  const state = getState().planets.get(targetId);
+  if (state) updatePlanet(targetId, { muted: body.muted });
   refreshSidebar();
 }
 

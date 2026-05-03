@@ -7,7 +7,9 @@ import type { Body, SimulationState } from './types.js';
 import type { Vector2 } from '../lib/math.js';
 import { vec2, distance } from '../lib/math.js';
 import { generateId } from '../lib/id.js';
+import { resetIdCounter } from '../lib/id.js';
 import { nextPaletteColor } from '../lib/colors.js';
+import { resetPaletteIndex } from '../lib/colors.js';
 import { computeForces } from './forces.js';
 import { positionUpdate, velocityUpdate, saveAccelerations } from './integrator.js';
 import {
@@ -113,6 +115,8 @@ export class Simulation {
       this.onBodyRemoved?.(b.id);
     }
     planetCounter = 0;
+    resetIdCounter();
+    resetPaletteIndex();
   }
 
   /** Execute one simulation step using Velocity Verlet */

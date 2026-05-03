@@ -414,3 +414,13 @@ select:hover {
 .controls-toggle.collapsed {
   right: 0;
 }
+
+/* === Responsive: auto-collapse panels at narrow widths per spec §05.11 === */
+@media (max-width: 1023px) {
+  .sidebar {
+    transform: translateX(-240px);
+  }
+  .controls {
+    transform: translateX(260px);
+  }
+}

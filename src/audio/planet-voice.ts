@@ -22,6 +22,10 @@ export interface PlanetVoice {
   gainNode: Tone.Gain;
   panNode: Tone.Panner;
   synthType: SynthType;
+  /** User-set volume (0–1), tracked separately so mute/unmute can restore it */
+  userVolume: number;
+  /** Whether this voice is muted — when true, triggerNote is a no-op */
+  muted: boolean;
 }
 
 /**
@@ -124,12 +128,13 @@ export function createVoice(
   gainNode.connect(panNode);
   panNode.connect(effects.input);
 
-  return { planetId, synth, filter, gainNode, panNode, synthType };
+  return { planetId, synth, filter, gainNode, panNode, synthType, userVolume: 0.75, muted: false };
 }
 
 /**
  * Trigger a note on a voice.
  * Applies velocity → timbre modulation per spec §06.7.
+ * No-op if the voice is muted.
  */
 export function triggerNote(
   voice: PlanetVoice,
@@ -138,13 +143,16 @@ export function triggerNote(
   velocity: number,
   normalizedVelocity: number,
 ): void {
+  // Skip entirely if muted — avoids overriding gain set by mutePlanet
+  if (voice.muted) return;
+
   const synth = voice.synth;
 
   // Apply velocity → timbre modulation based on synth type
   applyVelocityTimbre(voice, normalizedVelocity);
 
-  // Set volume based on velocity
-  voice.gainNode.gain.value = velocity;
+  // Set volume: user volume × velocity dynamics
+  voice.gainNode.gain.value = voice.userVolume * velocity;
 
   // Trigger the note
   if (synth instanceof Tone.PluckSynth) {
