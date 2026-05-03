@@ -1,7 +1,12 @@
 /**
  * Per-planet synth voice management.
  * Creates, updates, and disposes synth voices with the correct signal chain:
- *   Synth → Gain → Pan → Effects Bus
+ *   Synth → [Filter] → Gain → Pan → Effects Bus
+ *
+ * Saw/square synths run through a low-pass Filter for velocity-modulated cutoff.
+ * The PlanetVoice stores both the synth (for triggering) and optional filter,
+ * avoiding the prior bug where the Filter node was returned as the "synth" and
+ * notes could not be triggered.
  */
 
 import * as Tone from 'tone';
@@ -10,7 +15,10 @@ import type { EffectsChain } from './effects.js';
 
 export interface PlanetVoice {
   planetId: string;
-  synth: Tone.ToneAudioNode;
+  /** The actual triggerable synth — always the Tone.Synth/FMSynth/PluckSynth */
+  synth: Tone.Synth | Tone.FMSynth | Tone.PluckSynth;
+  /** Optional low-pass filter for saw/square types (null for others) */
+  filter: Tone.Filter | null;
   gainNode: Tone.Gain;
   panNode: Tone.Panner;
   synthType: SynthType;
@@ -18,20 +26,29 @@ export interface PlanetVoice {
 
 /**
  * Create a synth instance based on the given type.
- * Returns a ToneAudioNode that can be triggered with triggerAttackRelease.
+ * Returns the triggerable synth node and optional filter.
  */
-function createSynth(type: SynthType): Tone.ToneAudioNode {
+function createSynth(type: SynthType): {
+  synth: Tone.Synth | Tone.FMSynth | Tone.PluckSynth;
+  filter: Tone.Filter | null;
+} {
   switch (type) {
     case 'sine':
-      return new Tone.Synth({
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.5 },
-      });
+      return {
+        synth: new Tone.Synth({
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.5 },
+        }),
+        filter: null,
+      };
     case 'triangle':
-      return new Tone.Synth({
-        oscillator: { type: 'triangle' },
-        envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.5 },
-      });
+      return {
+        synth: new Tone.Synth({
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.5 },
+        }),
+        filter: null,
+      };
     case 'sawtooth': {
       const synth = new Tone.Synth({
         oscillator: { type: 'sawtooth' },
@@ -39,7 +56,7 @@ function createSynth(type: SynthType): Tone.ToneAudioNode {
       });
       const filter = new Tone.Filter(2000, 'lowpass');
       synth.connect(filter);
-      return filter;
+      return { synth, filter };
     }
     case 'square': {
       const synth = new Tone.Synth({
@@ -48,56 +65,71 @@ function createSynth(type: SynthType): Tone.ToneAudioNode {
       });
       const filter = new Tone.Filter(2000, 'lowpass');
       synth.connect(filter);
-      return filter;
+      return { synth, filter };
     }
     case 'fm':
-      return new Tone.FMSynth({
-        harmonicity: 1,
-        modulationIndex: 10,
-        envelope: { attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.8 },
-      });
+      return {
+        synth: new Tone.FMSynth({
+          harmonicity: 1,
+          modulationIndex: 10,
+          envelope: { attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.8 },
+        }),
+        filter: null,
+      };
     case 'marimba':
-      return new Tone.PluckSynth({
-        attackNoise: 2,
-        dampening: 4000,
-        resonance: 0.9,
-      });
+      return {
+        synth: new Tone.PluckSynth({
+          attackNoise: 2,
+          dampening: 4000,
+          resonance: 0.9,
+        }),
+        filter: null,
+      };
     case 'bell':
-      return new Tone.FMSynth({
-        harmonicity: 3.5,
-        modulationIndex: 14,
-        envelope: { attack: 0.01, decay: 1.0, sustain: 0.1, release: 1.5 },
-      });
+      return {
+        synth: new Tone.FMSynth({
+          harmonicity: 3.5,
+          modulationIndex: 14,
+          envelope: { attack: 0.01, decay: 1.0, sustain: 0.1, release: 1.5 },
+        }),
+        filter: null,
+      };
     case 'pluck':
-      return new Tone.PluckSynth({
-        attackNoise: 1,
-        dampening: 3000,
-        resonance: 0.95,
-      });
+      return {
+        synth: new Tone.PluckSynth({
+          attackNoise: 1,
+          dampening: 3000,
+          resonance: 0.95,
+        }),
+        filter: null,
+      };
   }
 }
 
 /**
- * Create a full voice chain for a planet: Synth → Gain → Pan → Effects.
+ * Create a full voice chain for a planet: Synth → [Filter] → Gain → Pan → Effects.
  */
 export function createVoice(
   planetId: string,
   synthType: SynthType,
   effects: EffectsChain,
 ): PlanetVoice {
-  const synth = createSynth(synthType);
+  const { synth, filter } = createSynth(synthType);
   const gainNode = new Tone.Gain(0.75);
   const panNode = new Tone.Panner(0);
 
-  synth.connect(gainNode);
+  // Connect: synth → [filter] → gain → pan → effects
+  const outputNode = filter ?? synth;
+  outputNode.connect(gainNode);
   gainNode.connect(panNode);
   panNode.connect(effects.input);
 
-  return { planetId, synth, gainNode, panNode, synthType };
+  return { planetId, synth, filter, gainNode, panNode, synthType };
 }
 
 /**
  * Trigger a note on a voice.
+ * Applies velocity → timbre modulation per spec §06.7.
  */
 export function triggerNote(
   voice: PlanetVoice,
@@ -108,22 +140,8 @@ export function triggerNote(
 ): void {
   const synth = voice.synth;
 
-  // Apply velocity-to-timbre modulation based on synth type
-  if (synth instanceof Tone.FMSynth) {
-    // FM: velocity → modulation index (faster = more metallic)
-    const modIndex = 1 + normalizedVelocity * 19; // range 1-20
-    synth.modulationIndex.value = modIndex;
-  }
-
-  // For filtered synths (saw/square), modulate filter
-  if (voice.synthType === 'sawtooth' || voice.synthType === 'square') {
-    // The synth node is actually a Filter in this case
-    const filter = synth as unknown as { frequency: { value: number } };
-    if (filter.frequency) {
-      const cutoff = 200 + normalizedVelocity * 7800; // 200-8000Hz
-      filter.frequency.value = cutoff;
-    }
-  }
+  // Apply velocity → timbre modulation based on synth type
+  applyVelocityTimbre(voice, normalizedVelocity);
 
   // Set volume based on velocity
   voice.gainNode.gain.value = velocity;
@@ -135,12 +153,57 @@ export function triggerNote(
     synth.triggerAttackRelease(frequency, duration);
   } else if (synth instanceof Tone.Synth) {
     synth.triggerAttackRelease(frequency, duration);
-  } else {
-    // Filter node for saw/square — try to trigger
-    try {
-      (synth as Tone.Synth).triggerAttackRelease?.(frequency, duration);
-    } catch {
-      // Ignore if not triggerable
+  }
+}
+
+/**
+ * Apply velocity → timbre modulation per spec §06.7:
+ * - Sine/Triangle: velocity → envelope attack (faster = shorter, more percussive)
+ * - Saw/Square: velocity → low-pass filter cutoff (faster = brighter)
+ * - FM/Bell: velocity → modulation index (faster = more metallic harmonics)
+ * - Pluck/Marimba: velocity → decay/resonance (faster = longer sustain)
+ */
+function applyVelocityTimbre(voice: PlanetVoice, normalizedVelocity: number): void {
+  const synth = voice.synth;
+
+  switch (voice.synthType) {
+    case 'sine':
+    case 'triangle': {
+      // Velocity → envelope attack: faster (high velocity) = shorter attack (more percussive)
+      // Range: 0.001s (fast/velocity=1) to 0.05s (slow/velocity=0)
+      if (synth instanceof Tone.Synth) {
+        synth.envelope.attack = 0.05 - normalizedVelocity * 0.049;
+      }
+      break;
+    }
+    case 'sawtooth':
+    case 'square': {
+      // Velocity → low-pass filter cutoff: faster = brighter
+      // Range: 200Hz (slow) to 8000Hz (fast) per spec §06.7
+      if (voice.filter) {
+        voice.filter.frequency.value = 200 + normalizedVelocity * 7800;
+      }
+      break;
+    }
+    case 'fm':
+    case 'bell': {
+      // Velocity → modulation index: faster = more metallic harmonics
+      // Range: 1 (slow) to 20 (fast) per spec §06.7
+      if (synth instanceof Tone.FMSynth) {
+        synth.modulationIndex.value = 1 + normalizedVelocity * 19;
+      }
+      break;
+    }
+    case 'marimba':
+    case 'pluck': {
+      // Velocity → decay length: faster = longer sustain
+      // PluckSynth uses resonance and dampening to control decay
+      if (synth instanceof Tone.PluckSynth) {
+        // Higher velocity → higher dampening (longer sustain)
+        // Range: 1000 (short/damped) to 6000 (long/ringing)
+        synth.dampening = 1000 + normalizedVelocity * 5000;
+      }
+      break;
     }
   }
 }
@@ -150,17 +213,16 @@ export function triggerNote(
  */
 export function disposeVoice(voice: PlanetVoice): void {
   try {
-    if (voice.synth instanceof Tone.PluckSynth) {
-      voice.synth.dispose();
-    } else if (voice.synth instanceof Tone.FMSynth) {
-      voice.synth.dispose();
-    } else if (voice.synth instanceof Tone.Synth) {
-      voice.synth.dispose();
-    } else if (voice.synth instanceof Tone.Filter) {
-      voice.synth.dispose();
-    }
+    voice.synth.dispose();
   } catch {
     // Best effort disposal
+  }
+  if (voice.filter) {
+    try {
+      voice.filter.dispose();
+    } catch {
+      // Best effort
+    }
   }
   voice.gainNode.dispose();
   voice.panNode.dispose();
@@ -174,20 +236,28 @@ export function updateVoiceSynth(
   voice: PlanetVoice,
   newType: SynthType,
 ): PlanetVoice {
-  // Disconnect and dispose old synth
+  // Disconnect and dispose old synth and filter
   try {
     voice.synth.disconnect();
-    if (voice.synth instanceof Tone.Synth) voice.synth.dispose();
-    else if (voice.synth instanceof Tone.FMSynth) voice.synth.dispose();
-    else if (voice.synth instanceof Tone.PluckSynth) voice.synth.dispose();
-    else if (voice.synth instanceof Tone.Filter) voice.synth.dispose();
+    voice.synth.dispose();
   } catch {
     // Best effort
   }
+  if (voice.filter) {
+    try {
+      voice.filter.disconnect();
+      voice.filter.dispose();
+    } catch {
+      // Best effort
+    }
+  }
 
-  // Create new synth
-  const synth = createSynth(newType);
-  synth.connect(voice.gainNode);
+  // Create new synth + optional filter
+  const { synth, filter } = createSynth(newType);
 
-  return { ...voice, synth, synthType: newType };
+  // Connect output to existing gain node
+  const outputNode = filter ?? synth;
+  outputNode.connect(voice.gainNode);
+
+  return { ...voice, synth, filter, synthType: newType };
 }

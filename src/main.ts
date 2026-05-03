@@ -10,7 +10,7 @@ import { Simulation } from './simulation/simulation.js';
 import { Renderer } from './renderer/renderer.js';
 import { AudioEngine } from './audio/engine.js';
 import { TriggerDetector } from './audio/triggers.js';
-import { findPlanetAt, getSelectedPlanetId } from './ui/selection.js';
+import { findPlanetAt } from './ui/selection.js';
 import { Sidebar } from './ui/sidebar.js';
 import { Controls } from './ui/controls.js';
 import { SpawnHandler } from './ui/spawn.js';
@@ -167,24 +167,24 @@ const triggerLineInteraction = new TriggerLineInteraction(canvas, {
 new KeyboardHandler({
   onTogglePause: () => { sim.running = !sim.running; },
   onDeleteSelected: () => {
-    const id = getSelectedPlanetId();
+    const id = getState().selectedPlanetId;
     if (id) deletePlanet(id);
   },
   onMuteSelected: () => {
-    const id = getSelectedPlanetId();
+    const id = getState().selectedPlanetId;
     if (id) {
       const body = sim.bodies.find((b) => b.id === id);
       if (body) {
         body.muted = !body.muted;
         audio.mutePlanet(id, body.muted);
-        const state = getState().planets.get(id);
-        if (state) updatePlanet(id, { muted: body.muted });
+        const pState = getState().planets.get(id);
+        if (pState) updatePlanet(id, { muted: body.muted });
         refreshSidebar();
       }
     }
   },
   onSoloSelected: () => {
-    const id = getSelectedPlanetId();
+    const id = getState().selectedPlanetId;
     if (id) {
       const body = sim.bodies.find((b) => b.id === id);
       if (body) {
@@ -196,7 +196,7 @@ new KeyboardHandler({
     }
   },
   onSetSynth: (index) => {
-    const id = getSelectedPlanetId();
+    const id = getState().selectedPlanetId;
     if (!id) return;
     const types: SynthType[] = ['sine', 'triangle', 'sawtooth', 'square', 'fm', 'marimba', 'bell', 'pluck'];
     const type = types[index];
@@ -232,13 +232,13 @@ function deletePlanet(id: string): void {
   sim.removeBody(id);
   audio.removeVoice(id);
   removePlanetState(id);
-  if (getSelectedPlanetId() === id) selectPlanet(null);
+  if (getState().selectedPlanetId === id) selectPlanet(null);
   refreshSidebar();
 }
 
 function refreshSidebar(): void {
   const state = getState();
-  sidebar.update(sim.bodies, state.selectedPlanetId);
+  sidebar.update(sim.bodies, state.selectedPlanetId, state.planets);
 
   // Update editor
   const selectedId = state.selectedPlanetId;
@@ -312,7 +312,7 @@ overlay.addEventListener('click', async () => {
 sim.onBodyRemoved = (id) => {
   audio.removeVoice(id);
   removePlanetState(id);
-  if (getSelectedPlanetId() === id) selectPlanet(null);
+  if (getState().selectedPlanetId === id) selectPlanet(null);
   refreshSidebar();
 };
 

@@ -53,7 +53,7 @@ export class Sidebar {
   private editorEl: HTMLElement;
 
   /** Update the sidebar to reflect current bodies and selection */
-  update(bodies: Body[], selectedId: string | null): void {
+  update(bodies: Body[], selectedId: string | null, planetStates?: Map<string, { synthType: SynthType }>): void {
     const planets = bodies.filter((b) => !b.isAnchor);
 
     // Toggle empty state
@@ -81,11 +81,11 @@ export class Sidebar {
       name.textContent = planet.name;
       row.appendChild(name);
 
-      // Synth label
+      // Synth label — read from planet state
       const synthLabel = document.createElement('span');
       synthLabel.className = 'planet-synth-label';
-      // We'll use a data attribute to store the synth type
-      synthLabel.textContent = 'FM'; // default, updated from state
+      const pState = planetStates?.get(planet.id);
+      synthLabel.textContent = pState ? SYNTH_LABELS[pState.synthType] : 'FM';
       row.appendChild(synthLabel);
 
       // Mute button

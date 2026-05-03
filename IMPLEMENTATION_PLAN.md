@@ -1,6 +1,6 @@
 # Orbital Harmonics — Implementation Plan
 
-> **Status:** Core implementation complete. All 7 test suites (91 tests) passing. TypeScript compiles cleanly. Build succeeds.
+> **Status:** Core implementation complete. All 9 test suites (117 tests) passing. TypeScript compiles cleanly. Build succeeds.
 > **Convention:** `src/lib/` is the project's standard library for shared utilities and components. Prefer consolidated, idiomatic implementations there over ad-hoc copies.
 
 ---
@@ -92,6 +92,8 @@ Each section depends on the ones above it. Items within a section can be done in
 - [x] `src/audio/__tests__/scales.test.ts` — 16 tests: note array generation, all 7 modes, root transposition, MIDI frequency
 - [x] `src/audio/__tests__/quantizer.test.ts` — 8 tests: distance→pitch mapping, edge cases, reversal
 - [x] `src/audio/__tests__/triggers.test.ts` — 8 tests: axis-crossing detection, debounce, configurable lines
+- [x] `src/state/__tests__/store.test.ts` — 20 tests: state mutations, selection, planets, trigger lines, resetAll
+- [x] `src/ui/__tests__/selection.test.ts` — 6 tests: findPlanetAt, tolerance, sun skipping, topmost planet
 
 ---
 
@@ -113,16 +115,33 @@ Each section depends on the ones above it. Items within a section can be done in
 - `vi.useFakeTimers()` mocks `Date.now()` but `performance.now()` behavior may vary.
 - The trigger detector uses `Date.now()` for debounce, which works reliably with `vi.setSystemTime()`.
 
-### Filter Nodes for Saw/Square Synths
-- `Tone.Synth` with saw/square runs through a `Tone.Filter` for velocity-modulated cutoff.
-- The filter node is returned as the "synth" in the voice. Triggering needs to reach the underlying Synth.
-- Current approach: try `triggerAttackRelease` on the node, catching failures. This should be refactored to store both the synth and filter references.
+### Filter Nodes for Saw/Square Synths (FIXED)
+- Saw/square synths now properly store both the Synth and Filter in `PlanetVoice`.
+- `PlanetVoice.synth` is always the triggerable node (Synth/FMSynth/PluckSynth).
+- `PlanetVoice.filter` is null for non-filtered types, `Tone.Filter` for saw/square.
+- Signal chain: Synth → [Filter] → Gain → Pan → Effects.
+- Disposal and voice updates properly handle both synth and filter nodes.
+
+### Selection State Duplication Bug (FIXED)
+- `selection.ts` had its own `selectedPlanetId` variable that was never updated.
+- All keyboard shortcuts (Delete, Mute, Solo, SetSynth) read from this stale variable → they were all broken.
+- Fix: removed the duplicate state from `selection.ts`. All reads now use `getState().selectedPlanetId` from the store.
+- Why it matters: selection is the bridge between UI interaction and keyboard actions. Without it, Delete/Mute/Solo/Synth shortcuts were no-ops.
+
+### Sidebar Synth Label Bug (FIXED)
+- Sidebar always showed 'FM' regardless of actual synth type. The label was hardcoded.
+- `sidebar.update()` now accepts an optional `planetStates` parameter to read the correct synth type.
+
+### Velocity → Timbre Modulation (IMPLEMENTED per spec §06.7)
+- Sine/Triangle: velocity modulates envelope attack (0.05s slow → 0.001s fast = more percussive)
+- Saw/Square: velocity modulates low-pass filter cutoff (200Hz slow → 8000Hz fast = brighter)
+- FM/Bell: velocity modulates modulation index (1 slow → 20 fast = more metallic harmonics)
+- Pluck/Marimba: velocity modulates dampening (1000 slow → 6000 fast = longer sustain)
 
 ---
 
 ## Remaining Improvements (Future)
 
-- [ ] Store both synth and filter references in PlanetVoice for saw/square types (avoids try/catch trigger)
 - [ ] Dual octave range slider (currently two separate sliders)
 - [ ] Predicted orbit path visualization (stretch goal from spec)
 - [ ] Audio CPU monitoring and graceful degradation (skip lowest-velocity triggers)
