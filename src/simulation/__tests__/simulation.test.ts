@@ -6,11 +6,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Simulation } from '../simulation.js';
 import { vec2 } from '../../lib/math.js';
+import { resetPaletteIndex, PLANET_PALETTE } from '../../lib/colors.js';
 
 describe('Simulation', () => {
   let sim: Simulation;
 
   beforeEach(() => {
+    resetPaletteIndex();
     sim = new Simulation(1000, 800);
   });
 
@@ -113,6 +115,22 @@ describe('Simulation', () => {
       sim.reset();
       expect(removed).toContain(p1.id);
       expect(removed).toContain(p2.id);
+    });
+
+    it('resets planet counter so new planets start from Planet 1', () => {
+      sim.addPlanet(vec2(600, 400), vec2(0, 3), 10);
+      sim.addPlanet(vec2(400, 400), vec2(0, -3), 10);
+      sim.reset();
+      const newPlanet = sim.addPlanet(vec2(600, 400), vec2(0, 3), 10);
+      expect(newPlanet.name).toBe('Planet 1');
+    });
+
+    it('resets palette index so new planets get first palette color', () => {
+      sim.addPlanet(vec2(600, 400), vec2(0, 3), 10);
+      sim.addPlanet(vec2(600, 400), vec2(0, 3), 10);
+      sim.reset();
+      const p2 = sim.addPlanet(vec2(600, 400), vec2(0, 3), 10);
+      expect(p2.color).toBe(PLANET_PALETTE[0]); // first palette color
     });
   });
 
