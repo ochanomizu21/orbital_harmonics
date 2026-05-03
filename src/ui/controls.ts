@@ -51,6 +51,10 @@ export class Controls {
   private reverbValue!: HTMLElement;
   private delayValue!: HTMLElement;
   private masterValue!: HTMLElement;
+  private voiceGainValue!: HTMLElement;
+  private limiterDbValue!: HTMLElement;
+  private compressorDbValue!: HTMLElement;
+  private compressorRatioValue!: HTMLElement;
 
   constructor(container: HTMLElement, callbacks: ControlsCallbacks) {
     this.container = container;
@@ -175,24 +179,32 @@ export class Controls {
     this.container.appendChild(this.createSection('AUDIO TUNING'));
 
     // Voice gain - reduces per-voice volume
-    this.container.appendChild(this.makeSlider('Voice Gain', 0.1, 1.0, 0.5, 0.05, (v) => {
+    const voiceGainContainer = this.makeSlider('Voice Gain', 0.1, 1.0, 0.5, 0.05, (v) => {
+      this.voiceGainValue.textContent = v.toFixed(2);
       this.callbacks.onVoiceGainChange(v);
-    }));
+    }, 'voiceGain');
+    this.container.appendChild(voiceGainContainer);
 
     // Limiter threshold - more negative = more headroom
-    this.container.appendChild(this.makeSlider('Limiter dB', -12, 0, -6, 1, (v) => {
+    const limiterDbContainer = this.makeSlider('Limiter dB', -12, 0, -6, 1, (v) => {
+      this.limiterDbValue.textContent = String(v);
       this.callbacks.onLimiterDbChange(v);
-    }));
+    }, 'limiterDb');
+    this.container.appendChild(limiterDbContainer);
 
     // Compressor threshold
-    this.container.appendChild(this.makeSlider('Comp. dB', -36, -12, -24, 1, (v) => {
+    const compressorDbContainer = this.makeSlider('Comp. dB', -36, -12, -24, 1, (v) => {
+      this.compressorDbValue.textContent = String(v);
       this.callbacks.onCompressorDbChange(v);
-    }));
+    }, 'compressorDb');
+    this.container.appendChild(compressorDbContainer);
 
     // Compressor ratio
-    this.container.appendChild(this.makeSlider('Comp. Ratio', 1, 12, 4, 0.5, (v) => {
+    const compressorRatioContainer = this.makeSlider('Comp. Ratio', 1, 12, 4, 0.5, (v) => {
+      this.compressorRatioValue.textContent = v.toFixed(1);
       this.callbacks.onCompressorRatioChange(v);
-    }));
+    }, 'compressorRatio');
+    this.container.appendChild(compressorRatioContainer);
 
     // Trigger Lines section
     this.container.appendChild(this.createSection('TRIGGER LINES'));
@@ -265,6 +277,10 @@ export class Controls {
     if (id === 'reverb') { this.reverbValue = val; }
     if (id === 'delay') { this.delayValue = val; }
     if (id === 'master') { this.masterValue = val; }
+    if (id === 'voiceGain') { this.voiceGainValue = val; }
+    if (id === 'limiterDb') { this.limiterDbValue = val; }
+    if (id === 'compressorDb') { this.compressorDbValue = val; }
+    if (id === 'compressorRatio') { this.compressorRatioValue = val; }
 
     return container;
   }
