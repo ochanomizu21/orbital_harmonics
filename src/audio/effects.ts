@@ -22,10 +22,10 @@ export interface AudioTuning {
 }
 
 export const DEFAULT_AUDIO_TUNING: AudioTuning = {
-  voiceGain: 0.5,
-  limiterDb: -6,
-  compressorDb: -24,
-  compressorRatio: 4,
+  voiceGain: 0.25,
+  limiterDb: -10,
+  compressorDb: -21,
+  compressorRatio: 8,
   masterGain: 0.6,
 };
 

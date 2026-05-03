@@ -5,7 +5,7 @@
 
 import * as Tone from 'tone';
 import type { TriggerEvent } from './types.js';
-import { EffectsChain } from './effects.js';
+import { EffectsChain, DEFAULT_AUDIO_TUNING } from './effects.js';
 import { createVoice, disposeVoice, updateVoiceSynth, triggerNote } from './planet-voice.js';
 import { generateNoteArray, midiToFrequency } from './scales.js';
 import { distanceToNote } from './quantizer.js';
@@ -22,7 +22,7 @@ export class AudioEngine {
   private triggerCountStartTime = 0;
 
   constructor() {
-    this.effects = new EffectsChain();
+    this.effects = new EffectsChain(DEFAULT_AUDIO_TUNING);
     this.triggerCountStartTime = performance.now();
     this.updateScale('C', 'lydian', 3, 5);
   }
