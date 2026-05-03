@@ -42,6 +42,16 @@ const audio = new AudioEngine();
 const triggerDetector = new TriggerDetector(getState().triggerLines);
 const shortcutsOverlay = new ShortcutsOverlay();
 
+// Apply saved settings at startup
+const savedSettings = getState().settings;
+sim.G = savedSettings.gravity;
+sim.simSpeed = savedSettings.simSpeed;
+renderer.setTrailFadeRate(savedSettings.trailFadeRate);
+audio.updateScale(savedSettings.root, savedSettings.mode, savedSettings.octaveMin, savedSettings.octaveMax);
+if (savedSettings.reverbMix !== undefined) audio.setReverbMix(savedSettings.reverbMix);
+if (savedSettings.delayMix !== undefined) audio.setDelayMix(savedSettings.delayMix);
+if (savedSettings.masterVolume !== undefined) audio.setMasterVolume(savedSettings.masterVolume);
+
 // === FPS tracking ===
 let frameCount = 0;
 let fpsTime = performance.now();
