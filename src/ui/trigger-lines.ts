@@ -1,5 +1,6 @@
 /**
- * Trigger line interaction — click to select, drag handles to rotate.
+ * Trigger line interaction — click/touch to select, drag handles to rotate.
+ * Supports both mouse and touch events for mobile.
  */
 
 import type { TriggerLineState } from '../state/types.js';
@@ -33,29 +34,60 @@ export class TriggerLineInteraction {
   }
 
   private attach(): void {
+    // Mouse events
     this.canvas.addEventListener('mousedown', (e) => {
-      // Check if near a trigger line
-      const result = this.findNearLine(e.clientX, e.clientY);
-      if (result) {
-        this.draggingId = result.lineId;
-        this.isDragging = true;
-        this.callbacks.onSelectLine(result.lineId);
-      }
+      this.handleStart(e.clientX, e.clientY);
     });
 
     this.canvas.addEventListener('mousemove', (e) => {
-      if (!this.draggingId) return;
-      // Compute angle from sun to mouse
-      const dx = e.clientX - this.sunX;
-      const dy = e.clientY - this.sunY;
-      const angle = Math.atan2(dy, dx);
-      this.callbacks.onRotateLine(this.draggingId, angle);
+      this.handleMove(e.clientX, e.clientY);
     });
 
     this.canvas.addEventListener('mouseup', () => {
-      this.draggingId = null;
-      this.isDragging = false;
+      this.handleEnd();
     });
+
+    // Touch events for mobile
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.handleStart(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.handleMove(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.handleEnd();
+    }, { passive: false });
+  }
+
+  private handleStart(x: number, y: number): void {
+    // Check if near a trigger line
+    const result = this.findNearLine(x, y);
+    if (result) {
+      this.draggingId = result.lineId;
+      this.isDragging = true;
+      this.callbacks.onSelectLine(result.lineId);
+    }
+  }
+
+  private handleMove(x: number, y: number): void {
+    if (!this.draggingId) return;
+    // Compute angle from sun to mouse
+    const dx = x - this.sunX;
+    const dy = y - this.sunY;
+    const angle = Math.atan2(dy, dx);
+    this.callbacks.onRotateLine(this.draggingId, angle);
+  }
+
+  private handleEnd(): void {
+    this.draggingId = null;
+    this.isDragging = false;
   }
 
   private findNearLine(x: number, y: number): { lineId: string } | null {

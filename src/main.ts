@@ -141,23 +141,21 @@ const statusBar = new StatusBar(statusBarEl);
 // Panel toggle buttons
 const sidebarToggle = document.createElement('button');
 sidebarToggle.className = 'panel-toggle sidebar-toggle';
-sidebarToggle.textContent = '◀';
-sidebarToggle.title = 'Toggle sidebar';
+sidebarToggle.textContent = '☰';
+sidebarToggle.title = 'Toggle planets panel';
 sidebarToggle.addEventListener('click', () => {
   const isCollapsed = sidebarEl.classList.toggle('collapsed');
-  sidebarToggle.textContent = isCollapsed ? '▶' : '◀';
-  sidebarToggle.style.left = isCollapsed ? '0' : '240px';
+  sidebarToggle.textContent = isCollapsed ? '☰' : '✕';
 });
 document.body.appendChild(sidebarToggle);
 
 const controlsToggle = document.createElement('button');
 controlsToggle.className = 'panel-toggle controls-toggle';
-controlsToggle.textContent = '◀';
-controlsToggle.title = 'Toggle controls';
+controlsToggle.textContent = '⚙';
+controlsToggle.title = 'Toggle settings';
 controlsToggle.addEventListener('click', () => {
   const isCollapsed = controlsEl.classList.toggle('collapsed');
-  controlsToggle.textContent = isCollapsed ? '▶' : '◀';
-  controlsToggle.style.right = isCollapsed ? '0' : '260px';
+  controlsToggle.textContent = isCollapsed ? '⚙' : '✕';
 });
 document.body.appendChild(controlsToggle);
 
@@ -368,7 +366,7 @@ canvas.addEventListener('mousemove', (e) => {
   canvas.style.cursor = 'crosshair';
 });
 
-// === Canvas click for planet selection ===
+// === Canvas click for planet selection (mouse) ===
 canvas.addEventListener('click', (e) => {
   const planet = findPlanetAt(sim.bodies, e.clientX, e.clientY);
   if (planet) {
@@ -380,6 +378,22 @@ canvas.addEventListener('click', (e) => {
   refreshSidebar();
 });
 
+// === Canvas touch for planet selection ===
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  // Only handle tap (not drag) - check if touch moved
+  if (spawnHandler.state.active) return; // Let spawn handler deal with it
+  const touch = e.changedTouches[0];
+  const planet = findPlanetAt(sim.bodies, touch.clientX, touch.clientY);
+  if (planet) {
+    selectPlanet(planet.id);
+  } else {
+    selectPlanet(null);
+    selectTriggerLine(null);
+  }
+  refreshSidebar();
+}, { passive: false });
+
 // === Resize handling ===
 function handleResize(): void {
   renderer.resize();
@@ -387,13 +401,42 @@ function handleResize(): void {
 }
 
 window.addEventListener('resize', handleResize);
+// Handle orientation change on mobile
+window.addEventListener('orientationchange', () => {
+  // Small delay to let the orientation settle
+  setTimeout(handleResize, 100);
+});
 handleResize();
+
+// === Mobile: initialize panels as collapsed ===
+function initMobilePanels(): void {
+  const isMobile = window.innerWidth <= 1023;
+  if (isMobile) {
+    sidebarEl.classList.add('collapsed');
+    controlsEl.classList.add('collapsed');
+  }
+}
+initMobilePanels();
+// Re-check on resize
+window.addEventListener('resize', () => {
+  const isMobile = window.innerWidth <= 1023;
+  if (isMobile) {
+    sidebarEl.classList.add('collapsed');
+    controlsEl.classList.add('collapsed');
+  }
+});
 
 // === "Click to Begin" overlay ===
 overlay.addEventListener('click', async () => {
   await audio.start();
   overlay.classList.add('hidden');
 });
+
+overlay.addEventListener('touchend', async (e) => {
+  e.preventDefault();
+  await audio.start();
+  overlay.classList.add('hidden');
+}, { passive: false });
 
 // === Simulation body removal callback ===
 sim.onBodyRemoved = (id) => {

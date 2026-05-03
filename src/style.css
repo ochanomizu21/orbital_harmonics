@@ -10,6 +10,9 @@
   --danger: #ef5350;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', monospace;
+  --sidebar-width: 240px;
+  --controls-width: 260px;
+  --status-height: 24px;
 }
 
 * {
@@ -70,7 +73,7 @@ html, body {
 .panel {
   position: fixed;
   top: 0;
-  bottom: 24px;
+  bottom: var(--status-height);
   background: var(--panel-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -85,24 +88,24 @@ html, body {
 
 .sidebar {
   left: 0;
-  width: 240px;
+  width: var(--sidebar-width);
   border-radius: 0 8px 8px 0;
   border-right: 1px solid var(--panel-border);
   padding: 12px;
 }
 .sidebar.collapsed {
-  transform: translateX(-240px);
+  transform: translateX(calc(var(--sidebar-width) * -1));
 }
 
 .controls {
   right: 0;
-  width: 260px;
+  width: var(--controls-width);
   border-radius: 8px 0 0 8px;
   border-left: 1px solid var(--panel-border);
   padding: 12px;
 }
 .controls.collapsed {
-  transform: translateX(260px);
+  transform: translateX(var(--controls-width));
 }
 
 /* === Panel Sections === */
@@ -308,7 +311,7 @@ select option {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 24px;
+  height: var(--status-height);
   background: rgba(10, 10, 20, 0.8);
   backdrop-filter: blur(8px);
   display: flex;
@@ -387,26 +390,28 @@ select option {
   backdrop-filter: blur(8px);
   border: 1px solid var(--panel-border);
   color: var(--text-secondary);
-  width: 24px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  transition: color 150ms, background 150ms;
+  font-size: 16px;
+  transition: color 150ms, background 150ms, opacity 150ms;
+  opacity: 0.3; /* Low opacity by default - subtle visibility */
 }
 .panel-toggle:hover {
+  opacity: 1;
   color: var(--text-primary);
   background: rgba(10, 10, 30, 0.95);
 }
 .sidebar-toggle {
   top: 50%;
   transform: translateY(-50%);
-  left: 240px;
+  left: var(--sidebar-width);
   border-radius: 0 6px 6px 0;
   border-left: none;
-  transition: left 200ms ease-out;
+  transition: left 200ms ease-out, opacity 150ms;
 }
 .sidebar-toggle.collapsed {
   left: 0;
@@ -414,10 +419,10 @@ select option {
 .controls-toggle {
   top: 50%;
   transform: translateY(-50%);
-  right: 260px;
+  right: var(--controls-width);
   border-radius: 6px 0 0 6px;
   border-right: none;
-  transition: right 200ms ease-out;
+  transition: right 200ms ease-out, opacity 150ms;
 }
 .controls-toggle.collapsed {
   right: 0;
@@ -436,9 +441,109 @@ body:has(.controls.collapsed) .controls-toggle {
 /* === Responsive: auto-collapse panels at narrow widths per spec §05.11 === */
 @media (max-width: 1023px) {
   .sidebar {
-    transform: translateX(-240px);
+    transform: translateX(calc(var(--sidebar-width) * -1));
   }
   .controls {
-    transform: translateX(260px);
+    transform: translateX(var(--controls-width));
+  }
+}
+
+/* === Mobile Modal Overlay (for narrow screens) === */
+@media (max-width: 1023px) {
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms;
+  }
+  .modal-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .modal-content {
+    background: var(--panel-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .modal-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-primary);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mobile-friendly button sizes */
+  .btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .panel-toggle {
+    opacity: 0.6; /* Slightly more visible on mobile */
+  }
+
+  /* Hide status bar text on very small screens */
+  @media (max-width: 400px) {
+    .status-left, .status-center, .status-right {
+      min-width: auto;
+    }
+    .status-left {
+      display: none;
+    }
+  }
+}
+
+/* Landscape mobile: panels hidden, toggle buttons visible */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .status-bar {
+    height: 20px;
+    font-size: 10px;
+  }
+}
+
+/* Prevent pull-to-refresh and overscroll on mobile */
+@media (pointer: coarse) {
+  html, body {
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
+  /* Make canvas respond to touch events only */
+  #canvas {
+    touch-action: none;
+  }
+}
+
+/* Touch-friendly sliders on mobile */
+@media (pointer: coarse) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
   }
 }
