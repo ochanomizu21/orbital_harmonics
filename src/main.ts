@@ -271,6 +271,45 @@ function refreshSidebar(): void {
   );
 }
 
+// === Canvas cursor management per spec §05.12 ===
+canvas.addEventListener('mousemove', (e) => {
+  // Skip if UI is being interacted with
+  if (spawnHandler.state.active) {
+    canvas.style.cursor = 'none';
+    return;
+  }
+  if (triggerLineInteraction.isDragging) {
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
+
+  // Check if over a planet → pointer
+  const planet = findPlanetAt(sim.bodies, e.clientX, e.clientY);
+  if (planet) {
+    canvas.style.cursor = 'pointer';
+    return;
+  }
+
+  // Check if near a trigger line → grab
+  const state = getState();
+  const sunX = sim.sun.position.x;
+  const sunY = sim.sun.position.y;
+  for (const line of state.triggerLines) {
+    const nx = Math.sin(line.angle);
+    const ny = -Math.cos(line.angle);
+    const dx = e.clientX - sunX;
+    const dy = e.clientY - sunY;
+    const dist = Math.abs(dx * nx + dy * ny);
+    if (dist < 10) {
+      canvas.style.cursor = 'grab';
+      return;
+    }
+  }
+
+  // Default → crosshair
+  canvas.style.cursor = 'crosshair';
+});
+
 // === Canvas click for planet selection ===
 canvas.addEventListener('click', (e) => {
   const planet = findPlanetAt(sim.bodies, e.clientX, e.clientY);

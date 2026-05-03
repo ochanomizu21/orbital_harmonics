@@ -15,7 +15,9 @@ export class TriggerLineInteraction {
   private lines: TriggerLineState[] = [];
   private sunX = 0;
   private sunY = 0;
-  private dragging: string | null = null;
+  /** Whether a trigger line handle is currently being dragged */
+  isDragging = false;
+  private draggingId: string | null = null;
 
   constructor(canvas: HTMLCanvasElement, callbacks: TriggerLineCallbacks) {
     this.canvas = canvas;
@@ -35,22 +37,24 @@ export class TriggerLineInteraction {
       // Check if near a trigger line
       const result = this.findNearLine(e.clientX, e.clientY);
       if (result) {
-        this.dragging = result.lineId;
+        this.draggingId = result.lineId;
+        this.isDragging = true;
         this.callbacks.onSelectLine(result.lineId);
       }
     });
 
     this.canvas.addEventListener('mousemove', (e) => {
-      if (!this.dragging) return;
+      if (!this.draggingId) return;
       // Compute angle from sun to mouse
       const dx = e.clientX - this.sunX;
       const dy = e.clientY - this.sunY;
       const angle = Math.atan2(dy, dx);
-      this.callbacks.onRotateLine(this.dragging, angle);
+      this.callbacks.onRotateLine(this.draggingId, angle);
     });
 
     this.canvas.addEventListener('mouseup', () => {
-      this.dragging = null;
+      this.draggingId = null;
+      this.isDragging = false;
     });
   }
 
