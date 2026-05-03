@@ -18,6 +18,11 @@ export interface ControlsCallbacks {
   onReverbMixChange: (value: number) => void;
   onDelayMixChange: (value: number) => void;
   onMasterVolumeChange: (value: number) => void;
+  // Audio tuning controls for clipping prevention
+  onVoiceGainChange: (value: number) => void;
+  onLimiterDbChange: (value: number) => void;
+  onCompressorDbChange: (value: number) => void;
+  onCompressorRatioChange: (value: number) => void;
   onAddTriggerLine: () => void;
   onResetTriggerLines: () => void;
 }
@@ -165,6 +170,29 @@ export class Controls {
       this.masterValue.textContent = v + '%';
       this.callbacks.onMasterVolumeChange(v / 100);
     }, 'master'));
+
+    // Audio tuning section - for preventing clipping
+    this.container.appendChild(this.createSection('AUDIO TUNING'));
+
+    // Voice gain - reduces per-voice volume
+    this.container.appendChild(this.makeSlider('Voice Gain', 0.1, 1.0, 0.5, 0.05, (v) => {
+      this.callbacks.onVoiceGainChange(v);
+    }));
+
+    // Limiter threshold - more negative = more headroom
+    this.container.appendChild(this.makeSlider('Limiter dB', -12, 0, -6, 1, (v) => {
+      this.callbacks.onLimiterDbChange(v);
+    }));
+
+    // Compressor threshold
+    this.container.appendChild(this.makeSlider('Comp. dB', -36, -12, -24, 1, (v) => {
+      this.callbacks.onCompressorDbChange(v);
+    }));
+
+    // Compressor ratio
+    this.container.appendChild(this.makeSlider('Comp. Ratio', 1, 12, 4, 0.5, (v) => {
+      this.callbacks.onCompressorRatioChange(v);
+    }));
 
     // Trigger Lines section
     this.container.appendChild(this.createSection('TRIGGER LINES'));

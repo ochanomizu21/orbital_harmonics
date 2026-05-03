@@ -103,6 +103,19 @@ const controls = new Controls(controlsEl, {
   onReverbMixChange: (v) => { audio.setReverbMix(v); updateSettings({ reverbMix: v }); },
   onDelayMixChange: (v) => { audio.setDelayMix(v); updateSettings({ delayMix: v }); },
   onMasterVolumeChange: (v) => { audio.setMasterVolume(v); updateSettings({ masterVolume: v }); },
+  // Audio tuning callbacks
+  onVoiceGainChange: (v) => {
+    audio.setVoiceGain(v);
+    // Also update all planet volumes
+    const planets = getState().planets;
+    for (const [id] of planets) {
+      audio.setPlanetVolume(id, v);
+      updatePlanet(id, { volume: v });
+    }
+  },
+  onLimiterDbChange: (v) => audio.setLimiterDb(v),
+  onCompressorDbChange: (v) => audio.setCompressorDb(v),
+  onCompressorRatioChange: (v) => audio.setCompressorRatio(v),
   onAddTriggerLine: () => {
     addTriggerLine();
     triggerDetector.setLines(getState().triggerLines);

@@ -133,6 +133,29 @@ export class AudioEngine {
     this.effects.setMasterVolume(volume);
   }
 
+  /** Set voice gain for all voices (reduces clipping) */
+  setVoiceGain(gain: number): void {
+    for (const voice of this.voices.values()) {
+      voice.gainNode.gain.value = gain;
+      voice.userVolume = gain;
+    }
+  }
+
+  /** Set limiter threshold in dB */
+  setLimiterDb(db: number): void {
+    this.effects.setLimiterThreshold(db);
+  }
+
+  /** Set compressor threshold in dB */
+  setCompressorDb(db: number): void {
+    this.effects.setCompressorThreshold(db);
+  }
+
+  /** Set compressor ratio */
+  setCompressorRatio(ratio: number): void {
+    this.effects.setCompressorRatio(ratio);
+  }
+
   /** Get triggers per minute (rolling average) */
   getTriggersPerMinute(): number {
     const elapsed = (performance.now() - this.triggerCountStartTime) / 60000;

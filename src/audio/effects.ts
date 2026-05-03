@@ -1,17 +1,33 @@
 /**
- * Audio effects chain: Reverb → Delay → Limiter → Master Gain.
+ * Audio effects chain: Reverb → Delay → Compressor → Limiter → Master Gain.
  * Uses Tone.js nodes for all processing.
- * 
+ *
  * Gain staging (per voice → effects → limit → master):
- * - Each voice outputs at ~0.5 gain
- * - Reverb/delay add ~30% wet signal
- * - Limiter at -6dB provides headroom
- * - Master at 0.6 provides final headroom
- * Total max per voice: 0.5 × 0.6 = 0.3 (well below clip)
- * With 10+ voices simultaneously: combined up to ~1.0 (limited to -6dB)
+ * - Voice gain: configurable (default 0.5)
+ * - Reverb/delay: add wet signal
+ * - Compressor: configurable threshold/ratio
+ * - Limiter: configurable threshold (default -6dB)
+ * - Master: configurable (default 0.6)
  */
 
 import * as Tone from 'tone';
+
+// Audio tuning params - can be adjusted at runtime
+export interface AudioTuning {
+  voiceGain: number;      // per-voice gain (default 0.5)
+  limiterDb: number;     // limiter threshold in dB (default -6)
+  compressorDb: number; // compressor threshold in dB (default -24)
+  compressorRatio: number; // compressor ratio (default 4)
+  masterGain: number;  // master gain (default 0.6)
+}
+
+export const DEFAULT_AUDIO_TUNING: AudioTuning = {
+  voiceGain: 0.5,
+  limiterDb: -6,
+  compressorDb: -24,
+  compressorRatio: 4,
+  masterGain: 0.6,
+};
 
 export class EffectsChain {
   reverb: Tone.Reverb;
@@ -20,15 +36,15 @@ export class EffectsChain {
   limiter: Tone.Limiter;
   masterGain: Tone.Gain;
 
-  constructor() {
+  constructor(tuning: AudioTuning = DEFAULT_AUDIO_TUNING) {
     this.reverb = new Tone.Reverb({ decay: 2.5, wet: 0.25, preDelay: 0.01 });
     this.delay = new Tone.FeedbackDelay({ delayTime: 0.375, feedback: 0.25, wet: 0.15 });
     // Compressor before limiter for smoother dynamics control
-    this.compressor = new Tone.Compressor(-24, 4);
-    // Limiter at -6dB (more headroom than -1dB)
-    this.limiter = new Tone.Limiter(-6);
-    // Master gain at 0.6 for final headroom
-    this.masterGain = new Tone.Gain(0.6);
+    this.compressor = new Tone.Compressor(tuning.compressorDb, tuning.compressorRatio);
+    // Limiter at configurable threshold
+    this.limiter = new Tone.Limiter(tuning.limiterDb);
+    // Master gain configurable
+    this.masterGain = new Tone.Gain(tuning.masterGain);
 
     // Chain: reverb → delay → compressor → limiter → master → destination
     this.reverb.connect(this.delay);
@@ -53,6 +69,21 @@ export class EffectsChain {
 
   setMasterVolume(volume: number): void {
     this.masterGain.gain.value = volume;
+  }
+
+  /** Set limiter threshold in dB */
+  setLimiterThreshold(db: number): void {
+    this.limiter.threshold.value = db;
+  }
+
+  /** Set compressor threshold in dB */
+  setCompressorThreshold(db: number): void {
+    this.compressor.threshold.value = db;
+  }
+
+  /** Set compressor ratio */
+  setCompressorRatio(ratio: number): void {
+    this.compressor.ratio.value = ratio;
   }
 
   dispose(): void {
