@@ -126,13 +126,13 @@ const spawnHandler = new SpawnHandler(canvas, {
       muted: false,
       soloed: false,
       synthType: state.settings.defaultSynth,
-      volume: 0.75,
+      volume: 0.5, // matches per-voice gain after clipping fix
       pan: 0,
     });
     audio.addVoice(body.id, state.settings.defaultSynth);
     refreshSidebar();
   },
-  getDefaultMass: () => 10,
+  getDefaultMass: () => 3 + Math.floor(Math.random() * 12), // random between 3-15
 });
 
 const triggerLineInteraction = new TriggerLineInteraction(canvas, {
