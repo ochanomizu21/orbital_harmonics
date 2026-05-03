@@ -89,7 +89,15 @@ const controls = new Controls(controlsEl, {
     const s = getState().settings;
     audio.updateScale(s.root, s.mode, s.octaveMin, s.octaveMax);
   },
-  onDefaultSynthChange: (synth) => updateSettings({ defaultSynth: synth }),
+  onDefaultSynthChange: (synth) => {
+    updateSettings({ defaultSynth: synth });
+    // Update all existing planets to use the new default synth
+    const planets = getState().planets;
+    for (const [id] of planets) {
+      audio.updateSynthType(id, synth);
+      updatePlanet(id, { synthType: synth });
+    }
+  },
   onReverbMixChange: (v) => { audio.setReverbMix(v); updateSettings({ reverbMix: v }); },
   onDelayMixChange: (v) => { audio.setDelayMix(v); updateSettings({ delayMix: v }); },
   onMasterVolumeChange: (v) => { audio.setMasterVolume(v); updateSettings({ masterVolume: v }); },
