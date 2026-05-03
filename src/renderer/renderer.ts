@@ -48,6 +48,7 @@ export class Renderer {
     this.canvas.style.height = `${this.height}px`;
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this.background.resize(this.width, this.height);
+    this.trails.resize(this.width, this.height, this.dpr);
   }
 
   /** Set trail fade rate */
@@ -100,8 +101,8 @@ export class Renderer {
     // 1. Background
     this.background.draw(ctx);
 
-    // 2. Trail fade overlay
-    this.trails.drawFadeOverlay(ctx, this.width, this.height);
+    // 2. Trails (with persistence on offscreen canvas)
+    this.trails.draw(ctx, bodies);
 
     // 3. Trigger lines
     const sun = bodies.find((b) => b.isAnchor);
@@ -109,15 +110,7 @@ export class Renderer {
       drawTriggerLines(ctx, triggerLines, sun.position.x, sun.position.y, this.width, this.height, selectedTriggerLineId);
     }
 
-    // 4. Trail dots (current positions)
-    ctx.save();
-    for (const body of bodies) {
-      if (body.isAnchor) continue;
-      this.trails.drawTrailDot(ctx, body.position.x, body.position.y, body.color);
-    }
-    ctx.restore();
-
-    // 5. Ripples and particles
+    // 4. Ripples and particles
     if (sun) {
       this.effects.draw(ctx, sun.position.x, sun.position.y, sun.radius);
     }
